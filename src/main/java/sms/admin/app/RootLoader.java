@@ -10,6 +10,10 @@ public class RootLoader extends FXLoader {
     public void load() {
         Scene scene = (Scene) params.get("scene");
         scene.setRoot(root);
+        
+        // Add stylesheet explicitly
+        String css = getClass().getResource("styles.css").toExternalForm();
+        scene.getStylesheets().add(css);
 
         RootController controller = loader.getController();
         FXControllerRegister.INSTANCE.register("ROOT", controller);

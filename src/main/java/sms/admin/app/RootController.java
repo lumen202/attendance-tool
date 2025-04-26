@@ -1,29 +1,34 @@
 package sms.admin.app;
 
-import dev.sol.core.application.FXController;
-import dev.finalproject.models.Student;
-import dev.finalproject.database.DataManager;
-import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.animation.Timeline;
-import javafx.animation.KeyFrame;
-import javafx.util.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import javafx.scene.control.ComboBox;
-import dev.finalproject.models.SchoolYear;
-import sms.admin.util.datetime.SchoolYearUtil;
-import javafx.collections.transformation.FilteredList;
+
 import dev.finalproject.data.AttendanceLogDAO;
 import dev.finalproject.data.AttendanceRecordDAO;
+import dev.finalproject.database.DataManager;
 import dev.finalproject.models.AttendanceLog;
 import dev.finalproject.models.AttendanceRecord;
-import java.time.LocalDate;
+import dev.finalproject.models.SchoolYear;
+import dev.finalproject.models.Student;
+import dev.sol.core.application.FXController;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
-import javafx.application.Platform;
+import javafx.util.Duration;
+import sms.admin.util.datetime.SchoolYearUtil;
 
 public class RootController extends FXController {
 
@@ -49,9 +54,11 @@ public class RootController extends FXController {
     private Label totalStudentsLabel;
     @FXML
     private Label statusLabel;
+    @FXML
+    private Button timeOutAllButton;
 
     private Timeline timeline;
-    private ObservableList<StudentAttendance> studentList = FXCollections.observableArrayList();
+    private ObservableList<StudentAttendance> studentList;
     private ObservableList<SchoolYear> schoolYearList;
     private FilteredList<StudentAttendance> filteredList;
     private ObservableList<AttendanceRecord> attendanceRecords;
@@ -64,11 +71,15 @@ public class RootController extends FXController {
             schoolYearList = DataManager.getInstance().getCollectionsRegistry().getList("SCHOOL_YEAR");
             yearComboBox.setItems(SchoolYearUtil.convertToStringList(schoolYearList));
 
-            // Set current school year
             SchoolYear currentYear = SchoolYearUtil.findCurrentYear(schoolYearList);
             if (currentYear != null) {
                 yearComboBox.setValue(SchoolYearUtil.formatSchoolYear(currentYear));
             }
+
+            // Initialize collections
+            studentList = FXCollections.observableArrayList();
+            attendanceRecords = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_RECORD");
+            attendanceLogs = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_LOG");
 
             initializeColumns();
             loadStudentData();
@@ -77,19 +88,52 @@ public class RootController extends FXController {
             // Initialize filtered list
             filteredList = new FilteredList<>(studentList);
             tableView.setItems(filteredList);
-
-            attendanceRecords = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_RECORD");
-            attendanceLogs = DataManager.getInstance().getCollectionsRegistry().getList("ATTENDANCE_LOG");
-
-            updateStatusBar();
         } catch (Exception e) {
             statusLabel.setText("Error: Failed to load data - " + e.getMessage());
         }
     }
 
+    @Override
+    protected void load_bindings() {
+        if (getParameter("stage") != null) {
+            stage = (Stage) getParameter("stage");
+        }
+
+        // Remove the existing binding and create a new one that updates automatically
+        totalStudentsLabel.textProperty().unbind(); // Unbind first to be safe
+        totalStudentsLabel.textProperty().bind(
+                javafx.beans.binding.Bindings.createStringBinding(
+                        () -> String.format("Showing %d of %d students",
+                                filteredList != null ? filteredList.size() : 0,
+                                studentList != null ? studentList.size() : 0),
+                        filteredList, studentList
+                )
+        );
+    }
+
+    @Override
+    protected void load_listeners() {
+        yearComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                loadStudentData();
+            }
+        });
+
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            filteredList.setPredicate(student -> {
+                if (newVal == null || newVal.isEmpty()) {
+                    return true;
+                }
+                String lowerCaseFilter = newVal.toLowerCase();
+                return student.getStudentId().toLowerCase().contains(lowerCaseFilter)
+                        || student.getStudentName().toLowerCase().contains(lowerCaseFilter);
+            });
+        });
+    }
+
     private void initializeColumns() {
         idColumn.setCellValueFactory(new PropertyValueFactory<>("studentId"));
-        idColumn.getStyleClass().add("id-column");
+        idColumn.setStyle("-fx-alignment: CENTER;");
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("studentName"));
         timeColumn.setCellValueFactory(new PropertyValueFactory<>("lastActionTime"));
 
@@ -114,7 +158,7 @@ public class RootController extends FXController {
                     setGraphic(null);
                 } else {
                     StudentAttendance student = getTableView().getItems().get(getIndex());
-                    button.setText(student.isLoggedIn() ? "Time Out" : "Time In");
+                    button.setText(student.isLoggedIn() ? "Time-out" : "Time-in");
                     button.getStyleClass().removeAll("login-button", "logout-button");
                     button.getStyleClass().add(student.isLoggedIn() ? "logout-button" : "login-button");
                     setGraphic(button);
@@ -192,6 +236,42 @@ public class RootController extends FXController {
         }
     }
 
+    @FXML
+    private void handleTimeOutAll() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            boolean isPM = now.getHour() >= 12;
+            int currentTime = now.getHour() * 100 + now.getMinute();
+            AttendanceRecord todayRecord = getOrCreateDayRecord();
+            int timeOutCount = 0;
+
+            for (StudentAttendance studentAttendance : studentList) {
+                if (studentAttendance.isLoggedIn()) {
+                    Student student = findStudentById(studentAttendance.getStudentId());
+                    if (student != null) {
+                        AttendanceLog log = findTodayAttendanceLog(student, todayRecord);
+                        if (log != null) {
+                            if (isPM) {
+                                log.setTimeOutPM(currentTime);
+                            } else {
+                                log.setTimeOutAM(currentTime);
+                            }
+                            AttendanceLogDAO.update(log);
+                            studentAttendance.setLoggedIn(false);
+                            studentAttendance.setLastActionTime(now.format(DateTimeFormatter.ofPattern("hh:mm:ss a")));
+                            timeOutCount++;
+                        }
+                    }
+                }
+            }
+
+            tableView.refresh();
+            statusLabel.setText(String.format("Timed out %d students", timeOutCount));
+        } catch (Exception e) {
+            statusLabel.setText("Error: " + e.getMessage());
+        }
+    }
+
     private AttendanceRecord getOrCreateDayRecord() {
         LocalDate today = LocalDate.now();
         return attendanceRecords.stream()
@@ -264,37 +344,5 @@ public class RootController extends FXController {
         } catch (NumberFormatException e) {
             return null;
         }
-    }
-
-    @Override
-    protected void load_bindings() {
-        // Add any necessary bindings
-    }
-
-    @Override
-    protected void load_listeners() {
-        yearComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                loadStudentData();
-            }
-        });
-
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
-            filteredList.setPredicate(student -> {
-                if (newVal == null || newVal.isEmpty()) {
-                    return true;
-                }
-                String lowerCaseFilter = newVal.toLowerCase();
-                return student.getStudentId().toLowerCase().contains(lowerCaseFilter)
-                        || student.getStudentName().toLowerCase().contains(lowerCaseFilter);
-            });
-            updateStatusBar();
-        });
-    }
-
-    private void updateStatusBar() {
-        int total = studentList.size();
-        int showing = filteredList.size();
-        totalStudentsLabel.setText(String.format("Showing %d of %d students", showing, total));
     }
 }

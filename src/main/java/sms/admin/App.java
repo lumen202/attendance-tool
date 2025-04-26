@@ -13,7 +13,6 @@ public class App extends FXApplication {
     public void initialize() throws Exception {
         configureApplication();
         initializeDataset();
-        // Prevent application from exiting when all stages are hidden
 
         // Initialize UI
         initialize_application();
@@ -21,12 +20,12 @@ public class App extends FXApplication {
     }
 
     private void configureApplication() {
-        setTitle("Student Management System - Student");
+        setTitle("Student Management System - Attendance Tool");
         setSkin(FXSkin.PRIMER_LIGHT);
-        // getApplicationStage().getIcons().add(
-        //         new Image(getClass()
-        //                 .getResource("/sms/student/assets/img/logo.png")
-        //                 .toExternalForm()));
+        getApplicationStage().getIcons().add(
+                new Image(getClass()
+                        .getResource("/sms/admin/assets/img/logo.png")
+                        .toExternalForm()));
     }
 
     public void initializeDataset() {
@@ -41,6 +40,11 @@ public class App extends FXApplication {
                 .addParameter("scene", applicationScene)
                 .addParameter("OWNER", applicationStage)
                 .initialize();
+
+        // Add stylesheet to scene
+        applicationScene.getStylesheets().add(
+            getClass().getResource("/sms/admin/app/styles.css").toExternalForm()
+        );
 
         applicationStage.requestFocus();
         rootLoader.load();
