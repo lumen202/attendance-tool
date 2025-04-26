@@ -1,0 +1,92 @@
+/* Base Colors */
+* {
+    -sms-primary: #003366;
+    -sms-secondary: #800000;
+    -sms-background: #f8f9fa;
+    -sms-border: #dee2e6;
+    -sms-accent: #ffd700;
+}
+
+/* Header Styles */
+.header-box {
+    -fx-background-color: -sms-primary;
+    -fx-padding: 15px;
+}
+
+.title-bar {
+    -fx-padding: 10px;
+    -fx-spacing: 5;
+}
+
+.header-date {
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 24px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.header-time {
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 36px;
+    -fx-text-fill: -sms-accent;
+    -fx-font-weight: bold;
+}
+
+/* Content Area */
+.content-box {
+    -fx-padding: 10px;
+    -fx-background-color: white;
+}
+
+/* Table Styles */
+.main-table {
+    -fx-background-color: white;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 4px;
+}
+
+.main-table .column-header {
+    -fx-background-color: -sms-background;
+    -fx-font-weight: bold;
+    -fx-padding: 8px;
+}
+
+.id-column {
+    -fx-alignment: CENTER;
+}
+
+/* Action Buttons */
+.action-button {
+    -fx-background-radius: 4px;
+    -fx-min-width: 100px;
+    -fx-min-height: 30px;
+    -fx-font-weight: bold;
+}
+
+.login-button {
+    -fx-background-color: -sms-primary;
+    -fx-text-fill: white;
+}
+
+.login-button:hover {
+    -fx-background-color: derive(-sms-primary, 20%);
+}
+
+.logout-button {
+    -fx-background-color: -sms-secondary;
+    -fx-text-fill: white;
+}
+
+.logout-button:hover {
+    -fx-background-color: derive(-sms-secondary, 20%);
+}
+
+/* Search Field */
+.search-field {
+    -fx-pref-width: 200px;
+    -fx-background-color: white;
+    -fx-background-radius: 4px;
+    -fx-border-color: -sms-border;
+    -fx-border-radius: 4px;
+    -fx-padding: 5px;
+}

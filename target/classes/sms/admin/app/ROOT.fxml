@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane styleClass="root" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" 
+    fx:controller="sms.admin.app.RootController">
+    <top>
+        <VBox styleClass="header-box">
+            <VBox alignment="CENTER" styleClass="title-bar">
+                <Label fx:id="dateLabel" styleClass="header-date"/>
+                <Label fx:id="timeLabel" styleClass="header-time"/>
+            </VBox>
+            <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="search-box">
+                    <Label text="School Year:" styleClass="label-field"/>
+                    <ComboBox fx:id="yearComboBox" prefWidth="150.0" />
+                    <Region HBox.hgrow="ALWAYS" />
+                    <TextField fx:id="searchField" promptText="Search students..." 
+                        styleClass="search-field"/>
+                </HBox>
+            </HBox>
+        </VBox>
+    </top>
+    
+    <center>
+        <VBox spacing="10" styleClass="content-box">
+            <TableView fx:id="tableView" VBox.vgrow="ALWAYS" styleClass="main-table">
+                <columns>
+                    <TableColumn fx:id="idColumn" prefWidth="120.0" text="Student ID" />
+                    <TableColumn fx:id="nameColumn" prefWidth="300.0" text="Student Name" />
+                    <TableColumn fx:id="timeColumn" prefWidth="180.0" text="Last Action" />
+                    <TableColumn fx:id="actionColumn" prefWidth="150.0" text="Time In/Out" />
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
+    </center>
+    
+    <bottom>
+        <HBox styleClass="status-bar">
+            <Label fx:id="statusLabel" text="Ready" />
+            <Region HBox.hgrow="ALWAYS" />
+            <Label fx:id="totalStudentsLabel" />
+        </HBox>
+    </bottom>
+</BorderPane>
